@@ -1,0 +1,12 @@
+*.pt
+*.xml
+*.wav
+*.pdf
+/.idea
+/demo
+/img
+*.png
+/outdir
+__pycache__
+Data/*
+!Data/demo
