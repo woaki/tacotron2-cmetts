@@ -1,6 +1,6 @@
 # CMESS: Towards Controllable Multi-speaker Emotional Speech Synthesis
 
-In this paper, we proposed CMESS: a seq2seq emotional speech synthesis model capable of generating emotional speech synthesis with high controllability. Visit our [website](http://isiplab.ahu.edu.cn/etts) for audio samples.
+In this paper, we proposed CMESS: a seq2seq emotional speech synthesis model capable of generating emotional speech synthesis with high controllability. Visit our [website](https://isiplabahu.github.io/cmetts) for audio samples.
 
 ## Pre-requisites
 
@@ -9,7 +9,6 @@ In this paper, we proposed CMESS: a seq2seq emotional speech synthesis model cap
 ## Setup
 
   1. Download and extract the [ESD dataset](https://hltsingapore.github.io/ESD/)
-     NOTICE: You can also use other data sets, but keep the file format consistent with the existing one. (filelists/ESD/esd_train.txt) The data set preparation part is mainly in the `text` and `utils` folders. There is no need to preprocess the data set.
      ```
      wav_path|phones|speaker_id|emotion_category
      ```
@@ -22,7 +21,3 @@ In this paper, we proposed CMESS: a seq2seq emotional speech synthesis model cap
   1. Get CMESS model ready
   2. Get [WaveGlow](https://github.com/NVIDIA/waveglow) model ready
   3. load inference.ipynb
-
-## Other Implementation
-
-  1. git checkout edm / gst
