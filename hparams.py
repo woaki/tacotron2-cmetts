@@ -22,13 +22,12 @@ def create_hparams():
         #      Data Parameters         #
         ################################
         load_mel_from_disk=False,
-        training_files="filelists/ESD/esd_train.txt",
+        training_files="Data/esd/train.list",
         # testing_files='filelists/esd_test.data',
         # validation_files='filelists/eval.data',
-        # text_cleaners=['mandarin_cleaners'],
-        text_cleaners=["english_cleaners"],
+        text_cleaners=["mandarin_cleaners"],
         num_emotions=5,
-        num_speakers=10,
+        num_speakers=11,
         ################################
         #      Audio Parameters        #
         ################################

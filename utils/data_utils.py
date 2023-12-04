@@ -17,9 +17,7 @@ class TextMelLoader(torch.utils.data.Dataset):
     """
 
     def __init__(self, audiopaths_and_text, hparams):
-        self.audiopaths_and_text = load_filepaths_and_text(
-            audiopaths_and_text
-        )  # [[filepath, text], ....]
+        self.audiopaths_and_text = load_filepaths_and_text(audiopaths_and_text)  # [[filepath, text], ....]
         self.text_cleaners = hparams.text_cleaners
         # self.max_wav_value = hparams.max_wav_value
         self.sampling_rate = hparams.sampling_rate
@@ -55,24 +53,16 @@ class TextMelLoader(torch.utils.data.Dataset):
         if not self.load_mel_from_disk:
             audio, sampling_rate = load_wav_to_torch(filename)
             if sampling_rate != self.stft.sampling_rate:
-                raise ValueError(
-                    "{} SR doesn't match target {} SR".format(
-                        sampling_rate, self.stft.sampling_rate
-                    )
-                )
+                raise ValueError("{} SR doesn't match target {} SR".format(sampling_rate, self.stft.sampling_rate))
             # audio_norm = audio / self.max_wav_value
             # audio_norm = audio_norm.unsqueeze(0)
             # audio_norm = torch.autograd.Variable(audio_norm, requires_grad=False)
             # melspec = self.stft.mel_spectrogram(audio_norm)
-            melspec = self.stft.mel_spectrogram(
-                torch.autograd.Variable(audio.unsqueeze(0), requires_grad=False)
-            )
+            melspec = self.stft.mel_spectrogram(torch.autograd.Variable(audio.unsqueeze(0), requires_grad=False))
             melspec = torch.squeeze(melspec, 0)
         else:
             melspec = torch.from_numpy(np.load(filename))
-            assert (
-                melspec.size(0) == self.stft.n_mel_channels
-            ), "Mel dimension mismatch: given {}, expected {}".format(
+            assert melspec.size(0) == self.stft.n_mel_channels, "Mel dimension mismatch: given {}, expected {}".format(
                 melspec.size(0), self.stft.n_mel_channels
             )
 
@@ -90,6 +80,8 @@ class TextMelLoader(torch.utils.data.Dataset):
         Returns:
             speaker_id: Tensor
         """
+        if speaker == "bznsy":
+            speaker = "0011"
         speaker_id = torch.IntTensor([int(speaker.strip()) - 1])
         return speaker_id
 
@@ -101,7 +93,7 @@ class TextMelLoader(torch.utils.data.Dataset):
         Returns:
             emotion_id: Tensor
         """
-        emotions = ["Angry", "Happy", "Surprise", "Neutral", "Sad"]
+        emotions = ["angry", "happy", "surprise", "neutral", "sad"]
         emotion_id = torch.IntTensor([emotions.index(emotion)])
         return emotion_id
 
@@ -132,9 +124,7 @@ class TextMelCollate:
         )
         max_input_len = input_lengths[0]
 
-        text_padded = torch.LongTensor(
-            len(batch), max_input_len
-        ).zero_()  # [N, max_text_len]
+        text_padded = torch.LongTensor(len(batch), max_input_len).zero_()  # [N, max_text_len]
         # text_padded.zero_()
         speaker_id = torch.LongTensor(len(batch))
         emotion_id = torch.LongTensor(len(batch))
@@ -150,9 +140,7 @@ class TextMelCollate:
         num_mels = batch[0][1].size(0)
         max_target_len = max([x[1].size(1) for x in batch])
         if max_target_len % self.n_frames_per_step != 0:
-            max_target_len += (
-                self.n_frames_per_step - max_target_len % self.n_frames_per_step
-            )
+            max_target_len += self.n_frames_per_step - max_target_len % self.n_frames_per_step
             assert max_target_len % self.n_frames_per_step == 0
 
         # include mel padded and gate padded
