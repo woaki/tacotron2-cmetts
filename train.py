@@ -39,10 +39,9 @@ def prepare_dataloaders(_hparams):
     return train_loader, collate_fn
 
 
-def prepare_directories_and_logger(log_directory):
-    if not os.path.isdir(log_directory):
-        os.makedirs(log_directory)
-        os.chmod(log_directory, 0o775)
+def prepare_directories_and_logger(output_directory, log_directory):
+    if not os.path.exists(output_directory):
+        os.makedirs(output_directory)
     logger = Tacotron2Logger(os.path.join(log_directory))
     return logger
 
@@ -225,14 +224,14 @@ if __name__ == "__main__":
         "--output_directory",
         type=str,
         help="directory to save checkpoints",
-        default="Data/your_data/ckpt",
+        default="./Data/your_data/ckpt",
     )
     parser.add_argument(
         "-l",
         "--log_directory",
         type=str,
         help="directory to save tensorboard logs",
-        default="Data/your_data/logs",
+        default="./Data/your_data/logs",
     )
     parser.add_argument(
         "-c",
