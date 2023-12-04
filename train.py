@@ -39,11 +39,11 @@ def prepare_dataloaders(_hparams):
     return train_loader, collate_fn
 
 
-def prepare_directories_and_logger(output_directory, log_directory):
-    if not os.path.isdir(output_directory):
-        os.makedirs(output_directory)
-        os.chmod(output_directory, 0o775)
-    logger = Tacotron2Logger(os.path.join(output_directory, log_directory))
+def prepare_directories_and_logger(log_directory):
+    if not os.path.isdir(log_directory):
+        os.makedirs(log_directory)
+        os.chmod(log_directory, 0o775)
+    logger = Tacotron2Logger(os.path.join(log_directory))
     return logger
 
 
