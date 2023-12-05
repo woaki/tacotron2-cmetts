@@ -53,16 +53,22 @@ class TextMelLoader(torch.utils.data.Dataset):
         if not self.load_mel_from_disk:
             audio, sampling_rate = load_wav_to_torch(filename)
             if sampling_rate != self.stft.sampling_rate:
-                raise ValueError("{} SR doesn't match target {} SR".format(sampling_rate, self.stft.sampling_rate))
+                raise ValueError(
+                    "{} SR doesn't match target {} SR".format(sampling_rate, self.stft.sampling_rate)
+                )
             # audio_norm = audio / self.max_wav_value
             # audio_norm = audio_norm.unsqueeze(0)
             # audio_norm = torch.autograd.Variable(audio_norm, requires_grad=False)
             # melspec = self.stft.mel_spectrogram(audio_norm)
-            melspec = self.stft.mel_spectrogram(torch.autograd.Variable(audio.unsqueeze(0), requires_grad=False))
+            melspec = self.stft.mel_spectrogram(
+                torch.autograd.Variable(audio.unsqueeze(0), requires_grad=False)
+            )
             melspec = torch.squeeze(melspec, 0)
         else:
             melspec = torch.from_numpy(np.load(filename))
-            assert melspec.size(0) == self.stft.n_mel_channels, "Mel dimension mismatch: given {}, expected {}".format(
+            assert (
+                melspec.size(0) == self.stft.n_mel_channels
+            ), "Mel dimension mismatch: given {}, expected {}".format(
                 melspec.size(0), self.stft.n_mel_channels
             )
 
@@ -94,6 +100,7 @@ class TextMelLoader(torch.utils.data.Dataset):
             emotion_id: Tensor
         """
         emotions = ["angry", "happy", "surprise", "neutral", "sad"]
+        # emotions = ["愤怒", "开心", "惊喜", "中立", "悲伤"]
         emotion_id = torch.IntTensor([emotions.index(emotion)])
         return emotion_id
 

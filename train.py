@@ -42,7 +42,9 @@ def prepare_dataloaders(_hparams):
 def prepare_directories_and_logger(output_directory, log_directory):
     if not os.path.exists(output_directory):
         os.makedirs(output_directory)
-    logger = Tacotron2Logger(os.path.join(log_directory))
+    if not os.path.exists(log_directory):
+        os.makedirs(log_directory)
+    logger = Tacotron2Logger(log_directory)
     return logger
 
 
@@ -123,12 +125,12 @@ def validate(hparams, model, criterion, style_criterion, valset, iteration, coll
     logger.log_validation(val_loss, model, y, y_pred, iteration)
 
 
-def train(output_directory, log_directory, checkpoint_path, warm_start, hparams):
+def train(model_directory, log_directory, checkpoint_path, warm_start, hparams):
     """Training and validation logging results to tensorboard and stdout
 
     Params
     ------
-    output_directory (string): directory to save checkpoints
+    model_directory (string): directory to save checkpoints
     log_directory (string) directory to save tensorboard logs
     checkpoint_path(string): checkpoint path
     rank (int): rank of current gpu
@@ -146,7 +148,7 @@ def train(output_directory, log_directory, checkpoint_path, warm_start, hparams)
     criterion = Tacotron2Loss()
     style_criterion = StyleLoss()
 
-    logger = prepare_directories_and_logger(output_directory, log_directory)
+    logger = prepare_directories_and_logger(model_directory, log_directory)
 
     train_loader, collate_fn = prepare_dataloaders(hparams)
 
@@ -157,7 +159,9 @@ def train(output_directory, log_directory, checkpoint_path, warm_start, hparams)
         if warm_start:
             tacotron2 = warm_start_model(checkpoint_path, tacotron2, hparams.ignore_layers)
         else:
-            tacotron2, optimizer, learning_rate, iteration = load_checkpoint(checkpoint_path, tacotron2, optimizer)
+            tacotron2, optimizer, learning_rate, iteration = load_checkpoint(
+                checkpoint_path, tacotron2, optimizer
+            )
             if hparams.use_saved_learning_rate:
                 learning_rate = learning_rate
             iteration += 1  # next iteration is iteration + 1
@@ -195,7 +199,11 @@ def train(output_directory, log_directory, checkpoint_path, warm_start, hparams)
             # logging
             if not is_overflow:
                 duration = time.perf_counter() - start
-                print("Train loss {} {:.6f} Style loss {:.6f} {:.2f}s/it".format(iteration, loss, style_loss, duration))
+                print(
+                    "Train loss {} {:.6f} Style loss {:.6f} {:.2f}s/it".format(
+                        iteration, loss, style_loss, duration
+                    )
+                )
                 logger.log_training(
                     loss.item(),
                     mel_loss.item(),
@@ -211,7 +219,7 @@ def train(output_directory, log_directory, checkpoint_path, warm_start, hparams)
             if not is_overflow and (iteration % hparams.iters_per_checkpoint == 0):
                 print(time.strftime("%Y-%m-%d-%H_%M_%S", time.localtime()))  # recording time
                 # saving checkpoint
-                checkpoint_path = os.path.join(output_directory, "checkpoint_{}.pt".format(iteration))
+                checkpoint_path = os.path.join(model_directory, "checkpoint_{}.pt".format(iteration))
                 save_checkpoint(tacotron2, optimizer, learning_rate, iteration, checkpoint_path)
 
             iteration += 1
