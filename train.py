@@ -187,9 +187,8 @@ def train(model_directory, log_directory, checkpoint_path, warm_start, hparams):
 
             # figure up loss
             tacotron_loss, mel_loss, gate_loss = criterion(y_pred, y)
-            # style_loss = style_criterion(style_out, style_targets)
-            style_loss = 0
-            loss = tacotron_loss
+            style_loss = style_criterion(style_out, style_targets)
+            loss = tacotron_loss + style_loss
 
             # backward & update
             loss.backward()
