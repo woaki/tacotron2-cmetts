@@ -9,4 +9,4 @@
 /outdir
 __pycache__
 Data/*
-!Data/demo
+!Data/your_data
