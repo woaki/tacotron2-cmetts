@@ -9,4 +9,4 @@
 /outdir
 __pycache__
 Data/*
-!Data/your_data
+!Data/your_data/filelists
