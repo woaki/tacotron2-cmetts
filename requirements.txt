@@ -4,11 +4,10 @@ inflect
 librosa
 Unidecode
 pillow
-torch
 easydict
 g2pM
-torchaudio
 scikit-learn
 scipy
 tqdm
 seaborn
+tensorboard
