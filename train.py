@@ -17,7 +17,7 @@ from hparams import create_hparams
 def prepare_dataloaders(_hparams):
     # Get data, data loaders and collate function ready
     trainset = TextMelLoader(_hparams.training_files, _hparams)
-    # valset = TextMelLoader(_hparams.validation_files, _hparams)
+    valset = TextMelLoader(_hparams.validation_files, _hparams)
     # collate_fn -- 对 dataset_batch 里的数据进行预处理, 返回处理后的数据
     collate_fn = TextMelCollate(_hparams)
 
@@ -36,7 +36,7 @@ def prepare_dataloaders(_hparams):
         drop_last=True,
         collate_fn=collate_fn,
     )
-    return train_loader, collate_fn
+    return train_loader, valset, collate_fn
 
 
 def prepare_directories_and_logger(output_directory, log_directory):
@@ -102,7 +102,7 @@ def validate(hparams, model, criterion, style_criterion, valset, iteration, coll
         val_loader = DataLoader(
             valset,
             sampler=None,
-            num_workers=16,
+            num_workers=1,
             shuffle=False,
             batch_size=hparams.batch_size,
             pin_memory=False,
@@ -125,7 +125,7 @@ def validate(hparams, model, criterion, style_criterion, valset, iteration, coll
     logger.log_validation(val_loss, model, y, y_pred, iteration)
 
 
-def train(model_directory, log_directory, checkpoint_path, warm_start, hparams):
+def train(model_directory, log_directory, checkpoint_path, warm_start, hparams, pretrain=False):
     """Training and validation logging results to tensorboard and stdout
 
     Params
@@ -150,7 +150,7 @@ def train(model_directory, log_directory, checkpoint_path, warm_start, hparams):
 
     logger = prepare_directories_and_logger(model_directory, log_directory)
 
-    train_loader, collate_fn = prepare_dataloaders(hparams)
+    train_loader, val_set, collate_fn = prepare_dataloaders(hparams)
 
     # Load checkpoint if one exists
     iteration = 0
@@ -187,8 +187,11 @@ def train(model_directory, log_directory, checkpoint_path, warm_start, hparams):
 
             # figure up loss
             tacotron_loss, mel_loss, gate_loss = criterion(y_pred, y)
-            style_loss = style_criterion(style_out, style_targets)
-            loss = tacotron_loss + style_loss
+            if not pretrain:
+                style_loss = style_criterion(style_out, style_targets)
+                loss = tacotron_loss + style_loss
+            else:
+                loss = tacotron_loss
 
             # backward & update
             loss.backward()
@@ -217,6 +220,7 @@ def train(model_directory, log_directory, checkpoint_path, warm_start, hparams):
 
             if not is_overflow and (iteration % hparams.iters_per_checkpoint == 0):
                 print(time.strftime("%Y-%m-%d-%H_%M_%S", time.localtime()))  # recording time
+                validate(tacotron2, criterion, style_criterion, val_set, iteration, collate_fn)
                 # saving checkpoint
                 checkpoint_path = os.path.join(model_directory, "checkpoint_{}.pt".format(iteration))
                 save_checkpoint(tacotron2, optimizer, learning_rate, iteration, checkpoint_path)
@@ -253,6 +257,11 @@ if __name__ == "__main__":
         action="store_true",
         help="load model weights only, ignore specified layers",
     )
+    parser.add_argument(
+        "--pretrain",
+        action="store_false",
+        help="pretrain or not",
+    )
     args = parser.parse_args()
     hparams = create_hparams()
 
@@ -270,5 +279,6 @@ if __name__ == "__main__":
         args.log_directory,
         args.checkpoint_path,
         args.warm_start,
+        args.pretrain,
         hparams,
     )
