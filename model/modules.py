@@ -224,7 +224,9 @@ class Classifier(nn.Module):
         self.out_features = out_features
         N = 3
 
-        linears = [nn.Linear(in_features=self.in_features, out_features=self.in_features) for _ in range(N - 1)]
+        linears = [
+            nn.Linear(in_features=self.in_features, out_features=self.in_features) for _ in range(N - 1)
+        ]
         linears.append(nn.Linear(in_features=self.in_features, out_features=self.out_features))
         self.linears = nn.ModuleList(linears)
 
@@ -276,7 +278,9 @@ class Attention(nn.Module):
         self.query_layer = LinearNorm(attention_rnn_dim, attention_dim, bias=False, w_init_gain="tanh")
         self.memory_layer = LinearNorm(embedding_dim, attention_dim, bias=False, w_init_gain="tanh")
         self.v = LinearNorm(attention_dim, 1, bias=False)
-        self.location_layer = LocationLayer(attention_location_n_filters, attention_location_kernel_size, attention_dim)
+        self.location_layer = LocationLayer(
+            attention_location_n_filters, attention_location_kernel_size, attention_dim
+        )
         self.score_mask_value = -float("inf")
 
     def get_alignment_energies(self, query, processed_memory, attention_weights_cat):
@@ -316,7 +320,9 @@ class Attention(nn.Module):
         attention_weights_cat: previous and cumulative attention weights
         mask: binary mask for padded data
         """
-        alignment = self.get_alignment_energies(attention_hidden_state, processed_memory, attention_weights_cat)
+        alignment = self.get_alignment_energies(
+            attention_hidden_state, processed_memory, attention_weights_cat
+        )
 
         if mask is not None:
             alignment.data.masked_fill_(mask, self.score_mask_value)
@@ -501,7 +507,9 @@ class Decoder(nn.Module):
             [hparams.prenet_dim, hparams.prenet_dim],
         )
 
-        self.attention_rnn = nn.LSTMCell(hparams.prenet_dim + self.encoder_embedding_dim, hparams.attention_rnn_dim)
+        self.attention_rnn = nn.LSTMCell(
+            hparams.prenet_dim + self.encoder_embedding_dim, hparams.attention_rnn_dim
+        )
 
         self.attention_layer = Attention(
             hparams.attention_rnn_dim,
@@ -622,7 +630,7 @@ class Decoder(nn.Module):
         """Decoder step using stored states, attention and memory
         PARAMS
         ------
-        decoder_input: previous mel output
+        decoder_input: previous mel output # [B, 256]
 
         RETURNS
         -------
@@ -679,22 +687,24 @@ class Decoder(nn.Module):
         alignments: sequence of attention weights from the decoder
         """
 
-        decoder_input = self.get_go_frame(memory).unsqueeze(0)
-        decoder_inputs = self.parse_decoder_inputs(decoder_inputs)
-        decoder_inputs = torch.cat((decoder_input, decoder_inputs), dim=0)
-        decoder_inputs = self.prenet(decoder_inputs)
+        decoder_input = self.get_go_frame(memory).unsqueeze(0)  # [1, B, 80] one step one frame
+        decoder_inputs = self.parse_decoder_inputs(decoder_inputs) # [T, B, 80]
+        decoder_inputs = torch.cat((decoder_input, decoder_inputs), dim=0) # [T+1, B, 80]
+        decoder_inputs = self.prenet(decoder_inputs) # [T+1, B, 256]
 
         self.initialize_decoder_states(memory, mask=~get_mask_from_lengths(memory_lengths))
 
         mel_outputs, gate_outputs, alignments = [], [], []
         while len(mel_outputs) < decoder_inputs.size(0) - 1:
-            decoder_input = decoder_inputs[len(mel_outputs)]
+            decoder_input = decoder_inputs[len(mel_outputs)] # teacher frame
             mel_output, gate_output, attention_weights = self.decode(decoder_input)
             mel_outputs += [mel_output.squeeze(1)]
             gate_outputs += [gate_output.squeeze(1)]
             alignments += [attention_weights]
 
-        mel_outputs, gate_outputs, alignments = self.parse_decoder_outputs(mel_outputs, gate_outputs, alignments)
+        mel_outputs, gate_outputs, alignments = self.parse_decoder_outputs(
+            mel_outputs, gate_outputs, alignments
+        )
 
         return mel_outputs, gate_outputs, alignments
 
@@ -731,6 +741,8 @@ class Decoder(nn.Module):
 
             decoder_input = mel_output
 
-        mel_outputs, gate_outputs, alignments = self.parse_decoder_outputs(mel_outputs, gate_outputs, alignments)
+        mel_outputs, gate_outputs, alignments = self.parse_decoder_outputs(
+            mel_outputs, gate_outputs, alignments
+        )
 
         return mel_outputs, gate_outputs, alignments
