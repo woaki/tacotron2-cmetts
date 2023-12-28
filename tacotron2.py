@@ -90,9 +90,7 @@ class Tacotron2(nn.Module):
         decoder_inputs = torch.cat((encoder_outputs, emotion_input), dim=2)  # [n, T_l, 512 + 128]
 
         # Tacotron2 Decoder
-        mel_outputs, gate_outputs, alignments = self.decoder(
-            decoder_inputs, mels, memory_lengths=text_lengths
-        )
+        mel_outputs, gate_outputs, alignments = self.decoder(decoder_inputs, mels, memory_lengths=text_lengths)
 
         mel_outputs_postnet = self.postnet(mel_outputs)
         mel_outputs_postnet = mel_outputs + mel_outputs_postnet
@@ -116,9 +114,10 @@ class Tacotron2(nn.Module):
 
         # get Decoder inputs already
         encoder_outputs = self.encoder.inference(embedded_text)
+        encoder_outputs = encoder_outputs + embedded_speaker.unsqueeze(1)
+
         emotion_input = emotion_embedding.unsqueeze(1).repeat(1, embedded_text.size(2), 1)
-        speaker_input = embedded_speaker.unsqueeze(1).repeat(1, embedded_text.size(2), 1)
-        decoder_inputs = torch.cat((encoder_outputs, emotion_input, speaker_input), dim=2)
+        decoder_inputs = torch.cat((encoder_outputs, emotion_input), dim=2)
         # Decoder
         mel_outputs, gate_outputs, alignments = self.decoder.inference(decoder_inputs)
 
