@@ -220,7 +220,7 @@ def train(model_directory, log_directory, checkpoint_path, warm_start, hparams, 
 
             if not is_overflow and (iteration % hparams.iters_per_checkpoint == 0):
                 print(time.strftime("%Y-%m-%d-%H_%M_%S", time.localtime()))  # recording time
-                validate(tacotron2, criterion, style_criterion, val_set, iteration, collate_fn)
+                validate(tacotron2, criterion, style_criterion, val_set, iteration, collate_fn, logger)
                 # saving checkpoint
                 checkpoint_path = os.path.join(model_directory, "checkpoint_{}.pt".format(iteration))
                 save_checkpoint(tacotron2, optimizer, learning_rate, iteration, checkpoint_path)
@@ -259,7 +259,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--pretrain",
-        action="store_false",
+        action="store_true",
         help="pretrain or not",
     )
     args = parser.parse_args()
@@ -279,6 +279,6 @@ if __name__ == "__main__":
         args.log_directory,
         args.checkpoint_path,
         args.warm_start,
-        args.pretrain,
         hparams,
+        args.pretrain,
     )
