@@ -49,7 +49,7 @@ class TTSInfer:
         for i, f in zip(initials, orig_finals):
             phones.append(i)
             phones.append(f)
-        text_to_sequence(" ".join(phones), self.hparams.text_cleaners)
+        phones = text_to_sequence(" ".join(phones), self.hparams.text_cleaners)
 
         return phones
 
@@ -81,4 +81,4 @@ if __name__ == "__main__":
     text = "目前的宇宙起源理论认为，宇宙诞生于距今约一百四十亿年前的一次大爆炸"
     spk = 0
     ref_audio = "Data/samples/01-sad.wav"
-    tts_infer.infer(text, spk, ref_audio)
+    mel = tts_infer.infer(text, spk, ref_audio)
