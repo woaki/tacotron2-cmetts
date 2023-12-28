@@ -49,8 +49,9 @@ class TTSInfer:
         for i, f in zip(initials, orig_finals):
             phones.append(i)
             phones.append(f)
+        text_to_sequence(" ".join(phones), self.hparams.text_cleaners)
 
-        return " ".join(phones)
+        return phones
 
     def infer(
         self,
@@ -62,8 +63,6 @@ class TTSInfer:
         mean: float = None,
     ):
         phones = self.get_text(text)
-        phones = " ".join(phones)
-        phones = text_to_sequence(phones, self.hparams.text_cleaners)
         ref_mel = self.get_ref_mel(ref_audio_path)
 
         phones = torch.LongTensor(phones).unsqueeze(0).to("cuda")
