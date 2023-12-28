@@ -18,13 +18,11 @@ def prepare_dataloaders(_hparams):
     # Get data, data loaders and collate function ready
     trainset = TextMelLoader(_hparams.training_files, _hparams)
     valset = TextMelLoader(_hparams.validation_files, _hparams)
-    # collate_fn -- 对 dataset_batch 里的数据进行预处理, 返回处理后的数据
     collate_fn = TextMelCollate(_hparams)
 
     train_sampler = None
     shuffle = True
 
-    # collate_fn 定义 train_loader 返回值
     # text_padded, input_lengths, mel_padded, gate_padded, output_lengths
     train_loader = DataLoader(
         trainset,
