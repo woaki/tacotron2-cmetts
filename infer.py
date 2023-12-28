@@ -3,19 +3,21 @@ import torch
 import numpy as np
 from scipy.io.wavfile import write
 
-from model import TacotronSTFT
-from tacotron2 import Tacotron2
+from pypinyin import pinyin, lazy_pinyin, Style
+
 from text import text_to_sequence
 from utils import load_wav_to_torch
+from model import TacotronSTFT
+from tacotron2 import Tacotron2
+from hifigan import Generator
 
 from hparams import create_hparams
-from pypinyin import pinyin, lazy_pinyin, Style
 
 
 class TTSInfer:
     def __init__(self, hparams, synthesizer_path) -> None:
         self.hparams = hparams
-        self.synthesizer = self.get_model(synthesizer_path)
+        self.synthesizer, self.vocoder = self.get_model(synthesizer_path)
         self.stft = TacotronSTFT(
             hparams.filter_length,
             hparams.hop_length,
@@ -27,12 +29,17 @@ class TTSInfer:
         )
         pass
 
-    def get_model(self, ckpt_path: str):
+    def get_model(self, syn_ckpt_path: str, vo_ckpt_path):
         synthesizer = Tacotron2(hparams)
-        ckpt = torch.load(ckpt_path)
-        synthesizer.load_state_dict(ckpt["state_dict"])
+        vocoder = Generator()
+
+        syn_ckpt = torch.load(syn_ckpt_path)
+        vocoder_ckpt = torch.load(vo_ckpt_path)
+        synthesizer.load_state_dict(syn_ckpt["state_dict"])
+        vocoder.load_state_dict(vocoder_ckpt["generator"])
+
         # vocoder =
-        return synthesizer.to("cuda")
+        return synthesizer.to("cuda"), vocoder.to("cuda")
 
     def get_ref_mel(self, ref_audio_path: str):
         audio, sampling_rate = load_wav_to_torch(ref_audio_path)
@@ -69,8 +76,14 @@ class TTSInfer:
         ref_mel = ref_mel.to("cuda")
         sid = torch.LongTensor([spk]).to("cuda")
 
-        mel = self.synthesizer.inference(phones, sid, ref_mel, cg, std, mean)
-        return mel
+        with torch.no_grad():
+            mel = self.synthesizer.inference(phones, sid, ref_mel, cg, std, mean)
+            y_g_hat = self.vocoder(mel)
+            audio = y_g_hat.squeeze()
+            audio = audio * 32768.0
+            audio = audio.cpu().numpy().astype("int16")
+
+        return audio
 
 
 if __name__ == "__main__":
@@ -81,4 +94,4 @@ if __name__ == "__main__":
     text = "目前的宇宙起源理论认为，宇宙诞生于距今约一百四十亿年前的一次大爆炸"
     spk = 0
     ref_audio = "Data/samples/01-sad.wav"
-    mel = tts_infer.infer(text, spk, ref_audio)
+    audio = tts_infer.infer(text, spk, ref_audio)

@@ -11,3 +11,4 @@ __pycache__
 Data/*
 !Data/your_data/filelists
 *.log
+/hifi-gan
