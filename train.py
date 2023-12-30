@@ -26,7 +26,7 @@ def prepare_dataloaders(_hparams):
     # text_padded, input_lengths, mel_padded, gate_padded, output_lengths
     train_loader = DataLoader(
         trainset,
-        num_workers=1,
+        num_workers=64,
         shuffle=shuffle,
         sampler=train_sampler,
         batch_size=_hparams.batch_size,
