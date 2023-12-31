@@ -22,9 +22,9 @@ def create_hparams():
         #      Data Parameters         #
         ################################
         load_mel_from_disk=False,
-        training_files="Data/esd/filelists/esd_cn_data.list",
+        training_files="Data/your_data/filelists/train.list",
         # testing_files='filelists/esd_test.data',
-        validation_files='Data/esd/filelists/val.lsit',
+        validation_files='Data/your_data/filelists/val.list',
         text_cleaners=["mandarin_cleaners"],
         num_emotions=5,
         num_speakers=10,
@@ -74,7 +74,7 @@ def create_hparams():
         learning_rate=1e-3,
         weight_decay=1e-6,
         grad_clip_thresh=1.0,
-        batch_size=1,
+        batch_size=128,
         mask_padding=True,  # set model's padded outputs to padded values
         ###########################################
         # Emotion Disentangling Module Parameters #

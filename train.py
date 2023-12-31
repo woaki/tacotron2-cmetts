@@ -218,7 +218,7 @@ def train(model_directory, log_directory, checkpoint_path, warm_start, hparams, 
 
             if not is_overflow and (iteration % hparams.iters_per_checkpoint == 0):
                 print(time.strftime("%Y-%m-%d-%H_%M_%S", time.localtime()))  # recording time
-                validate(tacotron2, criterion, style_criterion, val_set, iteration, collate_fn, logger)
+                validate(hparams, tacotron2, criterion, style_criterion, val_set, iteration, collate_fn, logger)
                 # saving checkpoint
                 checkpoint_path = os.path.join(model_directory, "checkpoint_{}.pt".format(iteration))
                 save_checkpoint(tacotron2, optimizer, learning_rate, iteration, checkpoint_path)
