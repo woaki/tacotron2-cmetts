@@ -150,7 +150,6 @@ def train(model_directory, log_directory, checkpoint_path, warm_start, hparams, 
 
     train_loader, val_set, collate_fn = prepare_dataloaders(hparams)
 
-    # Load checkpoint if one exists
     iteration = 0
     epoch_offset = 0
     if checkpoint_path is not None:
@@ -162,7 +161,7 @@ def train(model_directory, log_directory, checkpoint_path, warm_start, hparams, 
             )
             if hparams.use_saved_learning_rate:
                 learning_rate = learning_rate
-            iteration += 1  # next iteration is iteration + 1
+            iteration += 1
             epoch_offset = max(0, int(iteration / len(train_loader)))
 
     tacotron2.train()
@@ -177,13 +176,10 @@ def train(model_directory, log_directory, checkpoint_path, warm_start, hparams, 
 
             tacotron2.zero_grad()
 
-            # get training data ready
             x, y, style_targets = tacotron2.parse_batch(batch, hparams)
 
-            # model outputs
             y_pred, style_out, alignments = tacotron2(x)
 
-            # figure up loss
             tacotron_loss, mel_loss, gate_loss = criterion(y_pred, y)
             if not pretrain:
                 style_loss = style_criterion(style_out, style_targets)
@@ -191,12 +187,10 @@ def train(model_directory, log_directory, checkpoint_path, warm_start, hparams, 
             else:
                 loss = tacotron_loss
 
-            # backward & update
             loss.backward()
             grad_norm = torch.nn.utils.clip_grad_norm_(tacotron2.parameters(), hparams.grad_clip_thresh)
             optimizer.step()
 
-            # logging
             if not is_overflow:
                 duration = time.perf_counter() - start
                 print(
@@ -218,8 +212,9 @@ def train(model_directory, log_directory, checkpoint_path, warm_start, hparams, 
 
             if not is_overflow and (iteration % hparams.iters_per_checkpoint == 0):
                 print(time.strftime("%Y-%m-%d-%H_%M_%S", time.localtime()))  # recording time
-                validate(hparams, tacotron2, criterion, style_criterion, val_set, iteration, collate_fn, logger)
-                # saving checkpoint
+                validate(
+                    hparams, tacotron2, criterion, style_criterion, val_set, iteration, collate_fn, logger
+                )
                 checkpoint_path = os.path.join(model_directory, "checkpoint_{}.pt".format(iteration))
                 save_checkpoint(tacotron2, optimizer, learning_rate, iteration, checkpoint_path)
 

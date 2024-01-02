@@ -1,6 +1,5 @@
-import sys
 import torch
-import numpy as np
+import json
 from scipy.io.wavfile import write
 
 from pypinyin import pinyin, lazy_pinyin, Style
@@ -13,11 +12,23 @@ from hifigan import Generator
 
 from hparams import create_hparams
 
+device = "cuda" if torch.cuda.is_available() else "cpu"
+
+
+class AttrDict(dict):
+    def __init__(self, *args, **kwargs):
+        super(AttrDict, self).__init__(*args, **kwargs)
+        self.__dict__ = self
+
 
 class TTSInfer:
-    def __init__(self, hparams, synthesizer_path) -> None:
+    def __init__(self, hparams, ckpt_paths: list, config_path: str) -> None:
         self.hparams = hparams
-        self.synthesizer, self.vocoder = self.get_model(synthesizer_path)
+        self.synthesizer, self.vocoder = self.get_model(ckpt_paths, self.get_json(config_path))
+        with open(config_path) as f:
+            data = f.read()
+
+        json_config = json.loads(data)
         self.stft = TacotronSTFT(
             hparams.filter_length,
             hparams.hop_length,
@@ -29,17 +40,24 @@ class TTSInfer:
         )
         pass
 
-    def get_model(self, syn_ckpt_path: str, vo_ckpt_path):
-        synthesizer = Tacotron2(hparams)
-        vocoder = Generator()
+    def get_json(self, config_path: str):
+        with open(config_path) as f:
+            data = f.read()
 
-        syn_ckpt = torch.load(syn_ckpt_path)
-        vocoder_ckpt = torch.load(vo_ckpt_path)
+        json_config = json.loads(data)
+        return AttrDict(json_config)
+
+    def get_model(self, _ckpt_path: str, v_config):
+        synthesizer = Tacotron2(hparams)
+        vocoder = Generator(v_config)
+
+        syn_ckpt = torch.load(_ckpt_path[0], map_location=torch.device(device))
+        vocoder_ckpt = torch.load(_ckpt_path[1], map_location=torch.device(device))
         synthesizer.load_state_dict(syn_ckpt["state_dict"])
         vocoder.load_state_dict(vocoder_ckpt["generator"])
 
         # vocoder =
-        return synthesizer.to("cuda"), vocoder.to("cuda")
+        return synthesizer.to(device), vocoder.to(device)
 
     def get_ref_mel(self, ref_audio_path: str):
         audio, sampling_rate = load_wav_to_torch(ref_audio_path)
@@ -72,12 +90,12 @@ class TTSInfer:
         phones = self.get_text(text)
         ref_mel = self.get_ref_mel(ref_audio_path)
 
-        phones = torch.LongTensor(phones).unsqueeze(0).to("cuda")
-        ref_mel = ref_mel.to("cuda")
-        sid = torch.LongTensor([spk]).to("cuda")
+        phones = torch.LongTensor(phones).unsqueeze(0).to(device)
+        ref_mel = ref_mel.to(device)
+        sid = torch.LongTensor([spk]).to(device)
 
         with torch.no_grad():
-            mel = self.synthesizer.inference(phones, sid, ref_mel, cg, std, mean)
+            _, mel = self.synthesizer.inference(phones, sid, ref_mel, cg, std, mean)
             y_g_hat = self.vocoder(mel)
             audio = y_g_hat.squeeze()
             audio = audio * 32768.0
@@ -89,9 +107,11 @@ class TTSInfer:
 if __name__ == "__main__":
     hparams = create_hparams()
 
-    tts_infer = TTSInfer(hparams, "Data/v1/ckpt/checkpoint_50000.pt")
+    ckpt_paths = ["Data/cakpt/ta.pt", "hifigan/ckpt/g.pt"]
+    tts_infer = TTSInfer(hparams, ckpt_paths, "hifigan.json")
 
     text = "目前的宇宙起源理论认为，宇宙诞生于距今约一百四十亿年前的一次大爆炸"
     spk = 0
-    ref_audio = "Data/samples/01-sad.wav"
+    ref_audio = "samples/01-sad.wav"
     audio = tts_infer.infer(text, spk, ref_audio)
+    write("demo.wav", 16000, audio)

@@ -127,7 +127,7 @@ class Tacotron2(nn.Module):
 
         outputs = self.parse_output([mel_outputs, mel_outputs_postnet, gate_outputs, alignments])
 
-        return outputs
+        return outputs, mel_outputs_postnet
 
     @staticmethod
     def change_style(feature, std, mean):
